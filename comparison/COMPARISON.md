@@ -22,6 +22,24 @@ Best test macro-F1 over the 8 conditions on each side (each side's own argmax).
 | `tweet_eval-sentiment` | 0.6631 | 0.6631 | +0.0000 |
 | `vardial` | 0.5702 | 0.6543 | +0.0840 |
 
+## Delta Heatmaps
+
+Per metric, weighted minus weightless across datasets (rows) and conditions
+(columns). Warm = weighted is higher. For F1 and accuracy warm is better; for
+ECE warm is **worse** (more miscalibrated).
+
+### Δ macro f1
+
+![Δ macro f1](figures/delta_test_macro_f1.png)
+
+### Δ accuracy
+
+![Δ accuracy](figures/delta_test_accuracy.png)
+
+### Δ ece
+
+![Δ ece](figures/delta_test_ece.png)
+
 ## `davidson`
 
 | Condition | F1 wl | F1 w | ΔF1 | Acc wl | Acc w | ΔAcc | ECE wl | ECE w | ΔECE |
