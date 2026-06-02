@@ -152,32 +152,27 @@ def write_f1_condition_bars(comparison: pd.DataFrame, out_dir: pathlib.Path) -> 
 def write_main_effect_change_bars(
     weightless_full: pd.DataFrame, weighted_full: pd.DataFrame, out_dir: pathlib.Path
 ) -> dict[str, pathlib.Path]:
-    """Per dataset, signed bars of the change in each factorial effect (weighted - weightless)."""
+    """Per dataset, signed bars of the weighted sweep's factorial effect estimates."""
     figures = {}
     datasets = _ordered(weighted_full["dataset"].unique(), DATASET_ORDER)
     for dataset in datasets:
-        delta = _effect_change(weightless_full, weighted_full, dataset)
-        if delta is None:
+        effects = _weighted_effects(weighted_full, dataset)
+        if effects is None:
             continue
         path = out_dir / f"delta_effects_{dataset}.png"
         _save_signed_bars(
-            list(delta["effect"]), list(delta["estimate"]), f"{dataset}: Δ main effects", "Δ effect on F1", path
+            list(effects["effect"]), list(effects["estimate"]), f"{dataset}: main effects (weighted)", "Effect on F1", path
         )
         figures[dataset] = path
     return figures
 
 
-def _effect_change(weightless_full: pd.DataFrame, weighted_full: pd.DataFrame, dataset: str) -> pd.DataFrame | None:
-    """Weighted-minus-weightless factorial effect estimates for one dataset, or None if incomplete."""
-    weightless = _valid_dataset_runs(weightless_full, dataset)
+def _weighted_effects(weighted_full: pd.DataFrame, dataset: str) -> pd.DataFrame | None:
+    """Weighted-sweep factorial effect estimates for one dataset, or None if incomplete."""
     weighted = _valid_dataset_runs(weighted_full, dataset)
-    if weightless is None or weighted is None:
+    if weighted is None:
         return None
-    wl_effects = effects_table(weightless, "test_macro_f1")
-    w_effects = effects_table(weighted, "test_macro_f1")
-    merged = wl_effects.merge(w_effects, on=["effect", "kind"], suffixes=("_wl", "_w"))
-    merged["estimate"] = merged["estimate_w"] - merged["estimate_wl"]
-    return merged[["effect", "estimate"]]
+    return effects_table(weighted, "test_macro_f1")[["effect", "estimate"]]
 
 
 def _valid_dataset_runs(full: pd.DataFrame, dataset: str) -> pd.DataFrame | None:
@@ -354,7 +349,7 @@ def _dataset_section(
         lines.append(_dataset_row(condition, indexed.loc[condition]))
     lines.append("")
     lines += _dataset_figure(f1_bar, "F1 by condition: weightless vs weighted")
-    lines += _dataset_figure(effect_bar, "Δ main effects")
+    lines += _dataset_figure(effect_bar, "main effects (weighted)")
     return lines
 
 

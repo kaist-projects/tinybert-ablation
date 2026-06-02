@@ -61,7 +61,7 @@ ECE warm is **worse** (more miscalibrated).
 
 ![F1 by condition: weightless vs weighted](figures/delta_f1_conditions_davidson.png)
 
-![Δ main effects](figures/delta_effects_davidson.png)
+![main effects (weighted)](figures/delta_effects_davidson.png)
 
 ## `dynahate`
 
@@ -78,7 +78,7 @@ ECE warm is **worse** (more miscalibrated).
 
 ![F1 by condition: weightless vs weighted](figures/delta_f1_conditions_dynahate.png)
 
-![Δ main effects](figures/delta_effects_dynahate.png)
+![main effects (weighted)](figures/delta_effects_dynahate.png)
 
 ## `hateval`
 
@@ -95,7 +95,7 @@ ECE warm is **worse** (more miscalibrated).
 
 ![F1 by condition: weightless vs weighted](figures/delta_f1_conditions_hateval.png)
 
-![Δ main effects](figures/delta_effects_hateval.png)
+![main effects (weighted)](figures/delta_effects_hateval.png)
 
 ## `anli`
 
@@ -112,7 +112,7 @@ ECE warm is **worse** (more miscalibrated).
 
 ![F1 by condition: weightless vs weighted](figures/delta_f1_conditions_anli.png)
 
-![Δ main effects](figures/delta_effects_anli.png)
+![main effects (weighted)](figures/delta_effects_anli.png)
 
 ## `fever`
 
@@ -129,7 +129,7 @@ ECE warm is **worse** (more miscalibrated).
 
 ![F1 by condition: weightless vs weighted](figures/delta_f1_conditions_fever.png)
 
-![Δ main effects](figures/delta_effects_fever.png)
+![main effects (weighted)](figures/delta_effects_fever.png)
 
 ## `imdb`
 
@@ -146,7 +146,7 @@ ECE warm is **worse** (more miscalibrated).
 
 ![F1 by condition: weightless vs weighted](figures/delta_f1_conditions_imdb.png)
 
-![Δ main effects](figures/delta_effects_imdb.png)
+![main effects (weighted)](figures/delta_effects_imdb.png)
 
 ## `tweet_eval-sentiment`
 
@@ -163,7 +163,7 @@ ECE warm is **worse** (more miscalibrated).
 
 ![F1 by condition: weightless vs weighted](figures/delta_f1_conditions_tweet_eval-sentiment.png)
 
-![Δ main effects](figures/delta_effects_tweet_eval-sentiment.png)
+![main effects (weighted)](figures/delta_effects_tweet_eval-sentiment.png)
 
 ## `vardial`
 
@@ -180,4 +180,4 @@ ECE warm is **worse** (more miscalibrated).
 
 ![F1 by condition: weightless vs weighted](figures/delta_f1_conditions_vardial.png)
 
-![Δ main effects](figures/delta_effects_vardial.png)
+![main effects (weighted)](figures/delta_effects_vardial.png)
