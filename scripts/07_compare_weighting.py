@@ -20,6 +20,7 @@ import pandas as pd  # noqa: E402
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent.parent))
 
 from src.analysis.cross_dataset import CONDITION_ORDER, DATASET_ORDER  # noqa: E402
+from src.analysis.factorial import effects_table  # noqa: E402
 from src.analysis.loaders import load_all_runs  # noqa: E402
 from src.analysis.plots import FIGURE_DPI, plot_cross_task_heatmap  # noqa: E402
 
@@ -44,27 +45,34 @@ WEIGHT_TERMS = [
 
 
 def main() -> None:
-    comparison = build_comparison_frame(WEIGHTLESS_ROOT, WEIGHTED_ROOT)
-    weights = applied_weights(WEIGHTED_ROOT)
+    weightless_full = load_all_runs(WEIGHTLESS_ROOT)
+    weighted_full = load_all_runs(WEIGHTED_ROOT)
+    comparison = build_comparison_frame(weightless_full, weighted_full)
+    weights = applied_weights(weighted_full)
+
     best_f1 = write_best_f1_figure(comparison, FIGURES_DIR)
     heatmaps = write_delta_figures(comparison, FIGURES_DIR)
-    REPORT_PATH.write_text(render_comparison(comparison, weights, best_f1, heatmaps))
-    print(f"Wrote {REPORT_PATH} ({len(comparison)} rows, {1 + len(heatmaps)} figures).")
+    f1_bars = write_f1_condition_bars(comparison, FIGURES_DIR)
+    effect_bars = write_main_effect_change_bars(weightless_full, weighted_full, FIGURES_DIR)
+
+    report = render_comparison(comparison, weights, best_f1, heatmaps, f1_bars, effect_bars)
+    REPORT_PATH.write_text(report)
+    total = 1 + len(heatmaps) + len(f1_bars) + len(effect_bars)
+    print(f"Wrote {REPORT_PATH} ({len(comparison)} rows, {total} figures).")
 
 
-def build_comparison_frame(weightless_root: pathlib.Path, weighted_root: pathlib.Path) -> pd.DataFrame:
+def build_comparison_frame(weightless_full: pd.DataFrame, weighted_full: pd.DataFrame) -> pd.DataFrame:
     """Merge both sweeps into one row per (dataset, condition) with per-metric deltas."""
-    weightless = _side_frame(weightless_root, "wl")
-    weighted = _side_frame(weighted_root, "w")
+    weightless = _trim_side(weightless_full, "wl")
+    weighted = _trim_side(weighted_full, "w")
     merged = weightless.merge(weighted, on=["dataset", "condition"], how="outer")
     for column, _, _ in METRICS:
         merged[f"delta_{column}"] = merged[f"{column}_w"] - merged[f"{column}_wl"]
     return merged
 
 
-def _side_frame(metadata_root: pathlib.Path, suffix: str) -> pd.DataFrame:
-    """Tidy frame for one sweep, with metric columns suffixed and invalid rows nulled."""
-    runs = load_all_runs(metadata_root)
+def _trim_side(runs: pd.DataFrame, suffix: str) -> pd.DataFrame:
+    """Curated metric columns for one sweep, suffixed, with invalid rows nulled."""
     keep = ["dataset", "condition"] + [column for column, _, _ in METRICS]
     frame = runs.loc[:, keep].copy()
     invalid = ~runs["valid"]
@@ -125,10 +133,61 @@ def _delta_matrix(comparison: pd.DataFrame, value_column: str) -> pd.DataFrame:
     return matrix.reindex(index=rows, columns=cols)
 
 
-def applied_weights(weighted_root: pathlib.Path) -> dict:
+def write_f1_condition_bars(comparison: pd.DataFrame, out_dir: pathlib.Path) -> dict[str, pathlib.Path]:
+    """Per dataset, signed bars of ΔF1 (weighted - weightless) across the 8 conditions."""
+    figures = {}
+    for dataset in _ordered(comparison["dataset"].unique(), DATASET_ORDER):
+        rows = comparison.loc[comparison["dataset"] == dataset].set_index("condition")
+        conditions = _ordered(rows.index, CONDITION_ORDER)
+        values = [_float(rows.loc[condition, "delta_test_macro_f1"]) for condition in conditions]
+        path = out_dir / f"delta_f1_conditions_{dataset}.png"
+        _save_signed_bars(conditions, values, f"{dataset}: ΔF1 by condition", "Δ test macro-F1", path)
+        figures[dataset] = path
+    return figures
+
+
+def write_main_effect_change_bars(
+    weightless_full: pd.DataFrame, weighted_full: pd.DataFrame, out_dir: pathlib.Path
+) -> dict[str, pathlib.Path]:
+    """Per dataset, signed bars of the change in each factorial effect (weighted - weightless)."""
+    figures = {}
+    datasets = _ordered(weighted_full["dataset"].unique(), DATASET_ORDER)
+    for dataset in datasets:
+        delta = _effect_change(weightless_full, weighted_full, dataset)
+        if delta is None:
+            continue
+        path = out_dir / f"delta_effects_{dataset}.png"
+        _save_signed_bars(
+            list(delta["effect"]), list(delta["estimate"]), f"{dataset}: Δ main effects", "Δ effect on F1", path
+        )
+        figures[dataset] = path
+    return figures
+
+
+def _effect_change(weightless_full: pd.DataFrame, weighted_full: pd.DataFrame, dataset: str) -> pd.DataFrame | None:
+    """Weighted-minus-weightless factorial effect estimates for one dataset, or None if incomplete."""
+    weightless = _valid_dataset_runs(weightless_full, dataset)
+    weighted = _valid_dataset_runs(weighted_full, dataset)
+    if weightless is None or weighted is None:
+        return None
+    wl_effects = effects_table(weightless, "test_macro_f1")
+    w_effects = effects_table(weighted, "test_macro_f1")
+    merged = wl_effects.merge(w_effects, on=["effect", "kind"], suffixes=("_wl", "_w"))
+    merged["estimate"] = merged["estimate_w"] - merged["estimate_wl"]
+    return merged[["effect", "estimate"]]
+
+
+def _valid_dataset_runs(full: pd.DataFrame, dataset: str) -> pd.DataFrame | None:
+    """All-8 valid condition rows for a dataset, or None if any condition is missing/invalid."""
+    rows = full.loc[(full["dataset"] == dataset) & full["valid"]]
+    if len(rows) < len(CONDITION_ORDER):
+        return None
+    return rows
+
+
+def applied_weights(weighted_full: pd.DataFrame) -> dict:
     """Pull the loss weights actually used by the weighted sweep from any valid run."""
-    frame = load_all_runs(weighted_root)
-    valid = frame.loc[frame["valid"]]
+    valid = weighted_full.loc[weighted_full["valid"]]
     if valid.empty:
         return {}
     row = valid.iloc[0]
@@ -137,8 +196,41 @@ def applied_weights(weighted_root: pathlib.Path) -> dict:
     return weights
 
 
+def _save_signed_bars(
+    labels: list[str], values: list[float], title: str, ylabel: str, path: pathlib.Path
+) -> pathlib.Path:
+    """Save a signed bar chart centered at zero: positive teal, negative red."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    colors = ["#3274a1" if value >= 0 else "#c0504d" for value in values]
+    fig, ax = plt.subplots(figsize=(9, 4.8))
+    ax.bar(range(len(labels)), values, color=colors, width=0.8)
+    ax.axhline(0.0, color="#4c566a", linewidth=1.0)
+    span = max((abs(value) for value in values), default=0.0)
+    offset = max(span * 0.04, 1e-4)
+    for index, value in enumerate(values):
+        ax.text(index, value + (offset if value >= 0 else -offset), f"{value:+.3f}",
+                ha="center", va="bottom" if value >= 0 else "top", fontsize=8)
+    ax.set_title(title)
+    ax.set_ylabel(ylabel)
+    ax.set_xticks(range(len(labels)))
+    ax.set_xticklabels(labels, rotation=35, ha="right")
+    fig.tight_layout()
+    fig.savefig(path, dpi=FIGURE_DPI, bbox_inches="tight")
+    plt.close(fig)
+    return path
+
+
+def _float(value: object) -> float:
+    return 0.0 if pd.isna(value) else float(value)
+
+
 def render_comparison(
-    comparison: pd.DataFrame, weights: dict, best_f1: pathlib.Path, heatmaps: list[pathlib.Path]
+    comparison: pd.DataFrame,
+    weights: dict,
+    best_f1: pathlib.Path,
+    heatmaps: list[pathlib.Path],
+    f1_bars: dict[str, pathlib.Path],
+    effect_bars: dict[str, pathlib.Path],
 ) -> str:
     """Render the full weighted-vs-weightless markdown report."""
     lines = _header(weights)
@@ -146,7 +238,8 @@ def render_comparison(
     lines += _best_f1_section(best_f1)
     lines += _figures_section(heatmaps)
     for dataset in _ordered(comparison["dataset"].unique(), DATASET_ORDER):
-        lines += _dataset_section(dataset, comparison.loc[comparison["dataset"] == dataset])
+        rows = comparison.loc[comparison["dataset"] == dataset]
+        lines += _dataset_section(dataset, rows, f1_bars.get(dataset), effect_bars.get(dataset))
     return "\n".join(lines)
 
 
@@ -215,7 +308,9 @@ def _summary_table(comparison: pd.DataFrame) -> list[str]:
     return lines
 
 
-def _dataset_section(dataset: str, rows: pd.DataFrame) -> list[str]:
+def _dataset_section(
+    dataset: str, rows: pd.DataFrame, f1_bar: pathlib.Path | None, effect_bar: pathlib.Path | None
+) -> list[str]:
     indexed = rows.set_index("condition")
     headers = " | ".join(f"{label} wl | {label} w | Δ{label}" for _, label, _ in METRICS)
     aligns = " | ".join(["---:"] * (len(METRICS) * 3))
@@ -228,7 +323,16 @@ def _dataset_section(dataset: str, rows: pd.DataFrame) -> list[str]:
     for condition in _ordered(rows["condition"].unique(), CONDITION_ORDER):
         lines.append(_dataset_row(condition, indexed.loc[condition]))
     lines.append("")
+    lines += _dataset_figure(f1_bar, "ΔF1 by condition")
+    lines += _dataset_figure(effect_bar, "Δ main effects")
     return lines
+
+
+def _dataset_figure(figure: pathlib.Path | None, alt: str) -> list[str]:
+    if figure is None:
+        return []
+    relative = figure.relative_to(COMPARISON_ROOT).as_posix()
+    return [f"![{alt}]({relative})", ""]
 
 
 def _dataset_row(condition: str, row: pd.Series) -> str:

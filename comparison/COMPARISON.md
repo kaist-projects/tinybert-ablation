@@ -59,6 +59,10 @@ ECE warm is **worse** (more miscalibrated).
 | `kd_hidden_attn` | 0.7484 | 0.7502 | +0.0018 | 0.9121 | 0.9157 | +0.0036 | 0.0095 | 0.0183 | +0.0089 |
 | `kd_full` | 0.7582 | 0.7605 | +0.0023 | 0.9133 | 0.9117 | -0.0016 | 0.0170 | 0.0190 | +0.0019 |
 
+![ΔF1 by condition](figures/delta_f1_conditions_davidson.png)
+
+![Δ main effects](figures/delta_effects_davidson.png)
+
 ## `dynahate`
 
 | Condition | F1 wl | F1 w | ΔF1 | Acc wl | Acc w | ΔAcc | ECE wl | ECE w | ΔECE |
@@ -71,6 +75,10 @@ ECE warm is **worse** (more miscalibrated).
 | `kd_logit_attn` | 0.7405 | 0.7535 | +0.0129 | 0.7481 | 0.7578 | +0.0097 | 0.0592 | 0.0438 | -0.0154 |
 | `kd_hidden_attn` | 0.7120 | 0.7363 | +0.0243 | 0.7228 | 0.7427 | +0.0199 | 0.0666 | 0.0571 | -0.0095 |
 | `kd_full` | 0.7223 | 0.7455 | +0.0232 | 0.7291 | 0.7493 | +0.0201 | 0.0386 | 0.0336 | -0.0050 |
+
+![ΔF1 by condition](figures/delta_f1_conditions_dynahate.png)
+
+![Δ main effects](figures/delta_effects_dynahate.png)
 
 ## `hateval`
 
@@ -85,6 +93,10 @@ ECE warm is **worse** (more miscalibrated).
 | `kd_hidden_attn` | 0.5352 | 0.5590 | +0.0239 | 0.5490 | 0.5698 | +0.0208 | 0.2799 | 0.2809 | +0.0009 |
 | `kd_full` | 0.5474 | 0.5590 | +0.0116 | 0.5591 | 0.5718 | +0.0127 | 0.2877 | 0.2839 | -0.0038 |
 
+![ΔF1 by condition](figures/delta_f1_conditions_hateval.png)
+
+![Δ main effects](figures/delta_effects_hateval.png)
+
 ## `anli`
 
 | Condition | F1 wl | F1 w | ΔF1 | Acc wl | Acc w | ΔAcc | ECE wl | ECE w | ΔECE |
@@ -97,6 +109,10 @@ ECE warm is **worse** (more miscalibrated).
 | `kd_logit_attn` | 0.4317 | 0.4134 | -0.0182 | 0.4400 | 0.4213 | -0.0187 | 0.3221 | 0.2809 | -0.0412 |
 | `kd_hidden_attn` | 0.4195 | 0.4135 | -0.0060 | 0.4316 | 0.4200 | -0.0116 | 0.3248 | 0.2701 | -0.0547 |
 | `kd_full` | 0.4286 | 0.4156 | -0.0130 | 0.4381 | 0.4231 | -0.0150 | 0.3243 | 0.2723 | -0.0520 |
+
+![ΔF1 by condition](figures/delta_f1_conditions_anli.png)
+
+![Δ main effects](figures/delta_effects_anli.png)
 
 ## `fever`
 
@@ -111,6 +127,10 @@ ECE warm is **worse** (more miscalibrated).
 | `kd_hidden_attn` | 0.7864 | 0.8000 | +0.0137 | 0.8508 | 0.8572 | +0.0064 | 0.0333 | 0.0273 | -0.0060 |
 | `kd_full` | 0.7981 | 0.8021 | +0.0040 | 0.8584 | 0.8576 | -0.0008 | 0.0289 | 0.0200 | -0.0089 |
 
+![ΔF1 by condition](figures/delta_f1_conditions_fever.png)
+
+![Δ main effects](figures/delta_effects_fever.png)
+
 ## `imdb`
 
 | Condition | F1 wl | F1 w | ΔF1 | Acc wl | Acc w | ΔAcc | ECE wl | ECE w | ΔECE |
@@ -123,6 +143,10 @@ ECE warm is **worse** (more miscalibrated).
 | `kd_logit_attn` | 0.8506 | 0.8565 | +0.0059 | 0.8509 | 0.8566 | +0.0057 | 0.0405 | 0.0408 | +0.0003 |
 | `kd_hidden_attn` | 0.8387 | 0.8539 | +0.0152 | 0.8391 | 0.8540 | +0.0149 | 0.0347 | 0.0353 | +0.0006 |
 | `kd_full` | 0.8505 | 0.8561 | +0.0057 | 0.8507 | 0.8562 | +0.0055 | 0.0383 | 0.0388 | +0.0006 |
+
+![ΔF1 by condition](figures/delta_f1_conditions_imdb.png)
+
+![Δ main effects](figures/delta_effects_imdb.png)
 
 ## `tweet_eval-sentiment`
 
@@ -137,6 +161,10 @@ ECE warm is **worse** (more miscalibrated).
 | `kd_hidden_attn` | 0.6478 | 0.6591 | +0.0112 | 0.6470 | 0.6579 | +0.0109 | 0.0929 | 0.0868 | -0.0060 |
 | `kd_full` | 0.6552 | 0.6459 | -0.0093 | 0.6565 | 0.6446 | -0.0120 | 0.0508 | 0.1057 | +0.0549 |
 
+![ΔF1 by condition](figures/delta_f1_conditions_tweet_eval-sentiment.png)
+
+![Δ main effects](figures/delta_effects_tweet_eval-sentiment.png)
+
 ## `vardial`
 
 | Condition | F1 wl | F1 w | ΔF1 | Acc wl | Acc w | ΔAcc | ECE wl | ECE w | ΔECE |
@@ -149,3 +177,7 @@ ECE warm is **worse** (more miscalibrated).
 | `kd_logit_attn` | 0.5670 | 0.6543 | +0.0873 | 0.5768 | 0.6526 | +0.0758 | 0.0698 | 0.0470 | -0.0228 |
 | `kd_hidden_attn` | 0.3892 | 0.5176 | +0.1284 | 0.4210 | 0.5326 | +0.1116 | 0.0382 | 0.0391 | +0.0009 |
 | `kd_full` | 0.5192 | 0.6136 | +0.0944 | 0.5326 | 0.6168 | +0.0842 | 0.0340 | 0.0558 | +0.0218 |
+
+![ΔF1 by condition](figures/delta_f1_conditions_vardial.png)
+
+![Δ main effects](figures/delta_effects_vardial.png)
