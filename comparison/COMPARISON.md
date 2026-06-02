@@ -31,8 +31,8 @@ Best test macro-F1 over the 8 conditions per dataset, weightless vs weighted.
 ## Delta Heatmaps
 
 Per metric, weighted minus weightless across datasets (rows) and conditions
-(columns). Warm = weighted is higher. For F1 and accuracy warm is better; for
-ECE warm is **worse** (more miscalibrated).
+(columns). Warm = weighted is higher, which is better for F1 and accuracy.
+`vardial` is omitted as an outlier so the shared color scale stays readable.
 
 ### Δ macro f1
 
@@ -41,10 +41,6 @@ ECE warm is **worse** (more miscalibrated).
 ### Δ accuracy
 
 ![Δ accuracy](figures/delta_test_accuracy.png)
-
-### Δ ece
-
-![Δ ece](figures/delta_test_ece.png)
 
 ## `davidson`
 

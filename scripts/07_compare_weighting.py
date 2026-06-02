@@ -113,10 +113,18 @@ def _best_student_f1(comparison: pd.DataFrame, dataset: str, column: str) -> flo
     return float(rows.max(skipna=True))
 
 
+#: Metric columns excluded from the delta heatmaps (kept in the tables).
+HEATMAP_SKIP_METRICS = {"test_ece"}
+#: Datasets excluded from the delta heatmaps as outliers (kept in the tables).
+HEATMAP_SKIP_DATASETS = {"vardial"}
+
+
 def write_delta_figures(comparison: pd.DataFrame, out_dir: pathlib.Path) -> list[pathlib.Path]:
     """Write one datasets x conditions delta heatmap per curated metric."""
     written = []
     for column, label, _ in METRICS:
+        if column in HEATMAP_SKIP_METRICS:
+            continue
         matrix = _delta_matrix(comparison, f"delta_{column}")
         title = f"Weighted - weightless {label} (datasets x conditions)"
         written.extend(
@@ -128,7 +136,7 @@ def write_delta_figures(comparison: pd.DataFrame, out_dir: pathlib.Path) -> list
 def _delta_matrix(comparison: pd.DataFrame, value_column: str) -> pd.DataFrame:
     """Pivot a delta column into a dataset-row / condition-column matrix in canonical order."""
     matrix = comparison.pivot(index="dataset", columns="condition", values=value_column)
-    rows = [name for name in DATASET_ORDER if name in matrix.index]
+    rows = [name for name in DATASET_ORDER if name in matrix.index and name not in HEATMAP_SKIP_DATASETS]
     cols = [name for name in CONDITION_ORDER if name in matrix.columns]
     return matrix.reindex(index=rows, columns=cols)
 
@@ -305,8 +313,8 @@ def _figures_section(figures: list[pathlib.Path]) -> list[str]:
         "## Delta Heatmaps",
         "",
         "Per metric, weighted minus weightless across datasets (rows) and conditions",
-        "(columns). Warm = weighted is higher. For F1 and accuracy warm is better; for",
-        "ECE warm is **worse** (more miscalibrated).",
+        "(columns). Warm = weighted is higher, which is better for F1 and accuracy.",
+        "`vardial` is omitted as an outlier so the shared color scale stays readable.",
         "",
     ]
     for figure in figures:
