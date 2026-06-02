@@ -22,6 +22,12 @@ Best test macro-F1 over the 8 conditions on each side (each side's own argmax).
 | `tweet_eval-sentiment` | 0.6631 | 0.6631 | +0.0000 |
 | `vardial` | 0.5702 | 0.6543 | +0.0840 |
 
+## Best-Student F1 Chart
+
+Best test macro-F1 over the 8 conditions per dataset, weightless vs weighted.
+
+![Best-student F1: weightless vs weighted](figures/best_student_f1.png)
+
 ## Delta Heatmaps
 
 Per metric, weighted minus weightless across datasets (rows) and conditions

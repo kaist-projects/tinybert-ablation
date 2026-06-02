@@ -10,13 +10,18 @@ from __future__ import annotations
 import pathlib
 import sys
 
-import pandas as pd
+import matplotlib
+
+matplotlib.use("Agg")
+
+import matplotlib.pyplot as plt  # noqa: E402
+import pandas as pd  # noqa: E402
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent.parent))
 
 from src.analysis.cross_dataset import CONDITION_ORDER, DATASET_ORDER  # noqa: E402
 from src.analysis.loaders import load_all_runs  # noqa: E402
-from src.analysis.plots import plot_cross_task_heatmap  # noqa: E402
+from src.analysis.plots import FIGURE_DPI, plot_cross_task_heatmap  # noqa: E402
 
 COMPARISON_ROOT = pathlib.Path("comparison")
 WEIGHTLESS_ROOT = COMPARISON_ROOT / "weightless" / "metadata"
@@ -41,9 +46,10 @@ WEIGHT_TERMS = [
 def main() -> None:
     comparison = build_comparison_frame(WEIGHTLESS_ROOT, WEIGHTED_ROOT)
     weights = applied_weights(WEIGHTED_ROOT)
-    figures = write_delta_figures(comparison, FIGURES_DIR)
-    REPORT_PATH.write_text(render_comparison(comparison, weights, figures))
-    print(f"Wrote {REPORT_PATH} ({len(comparison)} rows, {len(figures)} figures).")
+    best_f1 = write_best_f1_figure(comparison, FIGURES_DIR)
+    heatmaps = write_delta_figures(comparison, FIGURES_DIR)
+    REPORT_PATH.write_text(render_comparison(comparison, weights, best_f1, heatmaps))
+    print(f"Wrote {REPORT_PATH} ({len(comparison)} rows, {1 + len(heatmaps)} figures).")
 
 
 def build_comparison_frame(weightless_root: pathlib.Path, weighted_root: pathlib.Path) -> pd.DataFrame:
@@ -66,6 +72,37 @@ def _side_frame(metadata_root: pathlib.Path, suffix: str) -> pd.DataFrame:
         frame.loc[invalid.values, column] = pd.NA
     rename = {column: f"{column}_{suffix}" for column, _, _ in METRICS}
     return frame.rename(columns=rename)
+
+
+def write_best_f1_figure(comparison: pd.DataFrame, out_dir: pathlib.Path) -> pathlib.Path:
+    """Grouped bars of best-student test macro-F1, weightless vs weighted, per dataset."""
+    out_dir.mkdir(parents=True, exist_ok=True)
+    datasets = [name for name in DATASET_ORDER if name in set(comparison["dataset"])]
+    weightless = [_best_student_f1(comparison, name, "test_macro_f1_wl") for name in datasets]
+    weighted = [_best_student_f1(comparison, name, "test_macro_f1_w") for name in datasets]
+
+    positions = range(len(datasets))
+    width = 0.4
+    fig, ax = plt.subplots(figsize=(11, 5))
+    ax.bar([p - width / 2 for p in positions], weightless, width, label="weightless", color="#9aa7b5")
+    ax.bar([p + width / 2 for p in positions], weighted, width, label="weighted", color="#3274a1")
+    ax.set_title("Best-student test macro-F1: weightless vs weighted")
+    ax.set_ylabel("Test macro-F1")
+    ax.set_ylim(0.0, 1.0)
+    ax.set_xticks(list(positions))
+    ax.set_xticklabels(datasets, rotation=35, ha="right")
+    ax.legend()
+    fig.tight_layout()
+
+    path = out_dir / "best_student_f1.png"
+    fig.savefig(path, dpi=FIGURE_DPI, bbox_inches="tight")
+    plt.close(fig)
+    return path
+
+
+def _best_student_f1(comparison: pd.DataFrame, dataset: str, column: str) -> float:
+    rows = comparison.loc[comparison["dataset"] == dataset, column]
+    return float(rows.max(skipna=True))
 
 
 def write_delta_figures(comparison: pd.DataFrame, out_dir: pathlib.Path) -> list[pathlib.Path]:
@@ -100,14 +137,29 @@ def applied_weights(weighted_root: pathlib.Path) -> dict:
     return weights
 
 
-def render_comparison(comparison: pd.DataFrame, weights: dict, figures: list[pathlib.Path]) -> str:
+def render_comparison(
+    comparison: pd.DataFrame, weights: dict, best_f1: pathlib.Path, heatmaps: list[pathlib.Path]
+) -> str:
     """Render the full weighted-vs-weightless markdown report."""
     lines = _header(weights)
     lines += _summary_table(comparison)
-    lines += _figures_section(figures)
+    lines += _best_f1_section(best_f1)
+    lines += _figures_section(heatmaps)
     for dataset in _ordered(comparison["dataset"].unique(), DATASET_ORDER):
         lines += _dataset_section(dataset, comparison.loc[comparison["dataset"] == dataset])
     return "\n".join(lines)
+
+
+def _best_f1_section(figure: pathlib.Path) -> list[str]:
+    relative = figure.relative_to(COMPARISON_ROOT).as_posix()
+    return [
+        "## Best-Student F1 Chart",
+        "",
+        "Best test macro-F1 over the 8 conditions per dataset, weightless vs weighted.",
+        "",
+        f"![Best-student F1: weightless vs weighted]({relative})",
+        "",
+    ]
 
 
 def _figures_section(figures: list[pathlib.Path]) -> list[str]:
