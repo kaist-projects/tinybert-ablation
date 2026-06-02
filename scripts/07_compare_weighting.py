@@ -134,14 +134,17 @@ def _delta_matrix(comparison: pd.DataFrame, value_column: str) -> pd.DataFrame:
 
 
 def write_f1_condition_bars(comparison: pd.DataFrame, out_dir: pathlib.Path) -> dict[str, pathlib.Path]:
-    """Per dataset, signed bars of ΔF1 (weighted - weightless) across the 8 conditions."""
+    """Per dataset, grouped weightless-vs-weighted F1 bars across the 8 conditions."""
     figures = {}
     for dataset in _ordered(comparison["dataset"].unique(), DATASET_ORDER):
         rows = comparison.loc[comparison["dataset"] == dataset].set_index("condition")
         conditions = _ordered(rows.index, CONDITION_ORDER)
-        values = [_float(rows.loc[condition, "delta_test_macro_f1"]) for condition in conditions]
+        weightless = [_float(rows.loc[condition, "test_macro_f1_wl"]) for condition in conditions]
+        weighted = [_float(rows.loc[condition, "test_macro_f1_w"]) for condition in conditions]
         path = out_dir / f"delta_f1_conditions_{dataset}.png"
-        _save_signed_bars(conditions, values, f"{dataset}: ΔF1 by condition", "Δ test macro-F1", path)
+        _save_grouped_bars(
+            conditions, weightless, weighted, f"{dataset}: test macro-F1 by condition", "Test macro-F1", path
+        )
         figures[dataset] = path
     return figures
 
@@ -214,6 +217,33 @@ def _save_signed_bars(
     ax.set_ylabel(ylabel)
     ax.set_xticks(range(len(labels)))
     ax.set_xticklabels(labels, rotation=35, ha="right")
+    fig.tight_layout()
+    fig.savefig(path, dpi=FIGURE_DPI, bbox_inches="tight")
+    plt.close(fig)
+    return path
+
+
+def _save_grouped_bars(
+    labels: list[str],
+    weightless: list[float],
+    weighted: list[float],
+    title: str,
+    ylabel: str,
+    path: pathlib.Path,
+) -> pathlib.Path:
+    """Save side-by-side weightless/weighted bars so the before/after gap is visible."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    positions = range(len(labels))
+    width = 0.4
+    fig, ax = plt.subplots(figsize=(11, 5))
+    ax.bar([p - width / 2 for p in positions], weightless, width, label="weightless", color="#9aa7b5")
+    ax.bar([p + width / 2 for p in positions], weighted, width, label="weighted", color="#3274a1")
+    ax.set_title(title)
+    ax.set_ylabel(ylabel)
+    ax.set_ylim(0.0, 1.0)
+    ax.set_xticks(list(positions))
+    ax.set_xticklabels(labels, rotation=35, ha="right")
+    ax.legend()
     fig.tight_layout()
     fig.savefig(path, dpi=FIGURE_DPI, bbox_inches="tight")
     plt.close(fig)
@@ -323,7 +353,7 @@ def _dataset_section(
     for condition in _ordered(rows["condition"].unique(), CONDITION_ORDER):
         lines.append(_dataset_row(condition, indexed.loc[condition]))
     lines.append("")
-    lines += _dataset_figure(f1_bar, "ΔF1 by condition")
+    lines += _dataset_figure(f1_bar, "F1 by condition: weightless vs weighted")
     lines += _dataset_figure(effect_bar, "Δ main effects")
     return lines
 
