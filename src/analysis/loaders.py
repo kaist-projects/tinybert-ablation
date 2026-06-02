@@ -28,6 +28,13 @@ METRIC_COLUMNS = (
     "loss_hidden",
     "loss_attention",
 )
+WEIGHT_COLUMNS = (
+    "weight_ce",
+    "weight_logit",
+    "weight_hidden",
+    "weight_attn",
+    "logit_temperature",
+)
 
 
 def load_runs(dataset_name: str, metadata_root: Path | str = METADATA_ROOT) -> pd.DataFrame:
@@ -92,6 +99,7 @@ def _student_row(dataset_name: str, condition: ConditionSpec, payload: dict, pat
     dev = payload.get("metrics", {}).get("dev", {})
     analysis = test.get("teacher_student_analysis", {})
     final_losses = _final_losses(payload)
+    weights = payload.get("optimization", {}).get("loss_weights", {})
     metadata_condition = payload.get("run", {}).get("condition")
     valid = metadata_condition == condition.name
     error = None if valid else f"metadata condition is {metadata_condition!r}"
@@ -121,6 +129,11 @@ def _student_row(dataset_name: str, condition: ConditionSpec, payload: dict, pat
         "loss_logit": _get(final_losses, "logit"),
         "loss_hidden": _get(final_losses, "hidden"),
         "loss_attention": _get(final_losses, "attention"),
+        "weight_ce": _get(weights, "ce"),
+        "weight_logit": _get(weights, "logit"),
+        "weight_hidden": _get(weights, "hidden"),
+        "weight_attn": _get(weights, "attn"),
+        "logit_temperature": _get(payload, "optimization", "logit_temperature"),
         "epochs_completed": _get(payload, "training", "epochs_completed"),
         "num_epochs": _get(payload, "optimization", "num_epochs"),
         "early_stopped": _get(payload, "checkpoint_selection", "early_stopped"),
@@ -144,6 +157,7 @@ def _invalid_row(dataset_name: str, condition: ConditionSpec, path: Path, error:
         "num_labels": pd.NA,
     }
     row.update({column: pd.NA for column in METRIC_COLUMNS})
+    row.update({column: pd.NA for column in WEIGHT_COLUMNS})
     return row
 
 

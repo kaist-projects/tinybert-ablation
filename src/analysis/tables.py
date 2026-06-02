@@ -141,6 +141,7 @@ def render_factorial_report(
             "below should be read as pipeline diagnostics and descriptive statistics, not",
             "resolved causal estimates.",
             "",
+            _loss_weights_section(df),
             "## Student Ablation Table",
             "",
             _without_title(render_student_ablation_table(df, teacher, dataset)),
@@ -164,6 +165,39 @@ def render_factorial_report(
         lines.extend([f"### {title}", "", f"![{title}]({relative.as_posix()})", ""])
 
     return "\n".join(lines)
+
+
+def _loss_weights_section(df: pd.DataFrame) -> str:
+    """Render the global loss-weight configuration used for this sweep."""
+    valid = df.loc[df["valid"]]
+    source = valid.iloc[0] if not valid.empty else df.iloc[0]
+    terms = [
+        ("CE", "weight_ce"),
+        ("Logit", "weight_logit"),
+        ("Hidden", "weight_hidden"),
+        ("Attention", "weight_attn"),
+    ]
+    lines = [
+        "## Loss Weights",
+        "",
+        "Global weights multiplying each active loss term:",
+        "`L_total = w_ce*L_CE + I_logit*w_logit*L_logit + I_hidden*w_hidden*L_hidden",
+        "+ I_attn*w_attn*L_attn`. Per-condition indicators `I` toggle terms on or off;",
+        "the weights themselves are identical across all conditions and datasets.",
+        "",
+        "| Term | Weight |",
+        "|---|---:|",
+    ]
+    for label, column in terms:
+        lines.append(f"| {label} | {_weight(source[column])} |")
+    lines.extend(["", f"Logit KD temperature `T`: {_weight(source['logit_temperature'])}.", ""])
+    return "\n".join(lines)
+
+
+def _weight(value: object) -> str:
+    if pd.isna(value):
+        return "N/A"
+    return f"`{float(value):g}`"
 
 
 def _ablation_rows(df: pd.DataFrame, teacher: pd.Series, ce: float) -> list[dict]:
