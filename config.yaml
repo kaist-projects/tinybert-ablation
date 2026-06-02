@@ -9,11 +9,11 @@
 # CLI flags override any value below. Training always evaluates on dev/test.
 
 run:
-  dataset: tweet_eval-sentiment
+  dataset: anli
   conditions:              # which KD signals are active; all false -> ce_only
-    logit: false
-    hidden: false
-    attention: false
+    logit: true
+    hidden: true
+    attention: true
 
 model:
   teacher: bert-base-uncased
@@ -37,6 +37,6 @@ distillation:
   logit_temperature: 1.0
   loss_weights:
     ce: 1.0
-    logit: 1.0
-    hidden: 1.0
-    attn: 1.0
+    logit: 1.3
+    hidden: 2.1
+    attn: 400.0

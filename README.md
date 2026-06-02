@@ -215,10 +215,10 @@ training. To balance them, per-dataset starting points are:
 | `tweet_eval-sentiment` | 1.0 | 3.0 | 2.2 | 125 |
 | `imdb` | 1.0 | 1.8 | 0.9 | 240 |
 | `anli` | 1.0 | 1.3 | 2.1 | 400 |
-| `davidson` | 1.0 | 4.0 | 0.8 | 53 |
+| `davidson` | 1.0 | 4.0 | 0.9 | 53 |
 | `dynahate` | 1.0 | 2.3 | 1.5 | 110 |
 | `hateval` | 1.0 | 2.4 | 1.1 | 100 |
-| `fever` | 1.0 | 1.8 | 1.5 | 300 |
+| `fever` | 1.0 | 1.8 | 1.5 | 500 |
 | `vardial` | 1.0 | 1.6 | 2.3 | 140 |
 
 
