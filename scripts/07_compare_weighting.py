@@ -152,27 +152,36 @@ def write_f1_condition_bars(comparison: pd.DataFrame, out_dir: pathlib.Path) -> 
 def write_main_effect_change_bars(
     weightless_full: pd.DataFrame, weighted_full: pd.DataFrame, out_dir: pathlib.Path
 ) -> dict[str, pathlib.Path]:
-    """Per dataset, signed bars of the weighted sweep's factorial effect estimates."""
+    """Per dataset, grouped weightless-vs-weighted factorial effect estimates."""
     figures = {}
     datasets = _ordered(weighted_full["dataset"].unique(), DATASET_ORDER)
     for dataset in datasets:
-        effects = _weighted_effects(weighted_full, dataset)
+        effects = _effect_pair(weightless_full, weighted_full, dataset)
         if effects is None:
             continue
         path = out_dir / f"delta_effects_{dataset}.png"
-        _save_signed_bars(
-            list(effects["effect"]), list(effects["estimate"]), f"{dataset}: main effects (weighted)", "Effect on F1", path
+        _save_grouped_bars(
+            list(effects["effect"]),
+            list(effects["estimate_wl"]),
+            list(effects["estimate_w"]),
+            f"{dataset}: main effects",
+            "Effect on F1",
+            path,
+            signed=True,
         )
         figures[dataset] = path
     return figures
 
 
-def _weighted_effects(weighted_full: pd.DataFrame, dataset: str) -> pd.DataFrame | None:
-    """Weighted-sweep factorial effect estimates for one dataset, or None if incomplete."""
+def _effect_pair(weightless_full: pd.DataFrame, weighted_full: pd.DataFrame, dataset: str) -> pd.DataFrame | None:
+    """Weightless and weighted factorial effect estimates aligned per effect, or None if incomplete."""
+    weightless = _valid_dataset_runs(weightless_full, dataset)
     weighted = _valid_dataset_runs(weighted_full, dataset)
-    if weighted is None:
+    if weightless is None or weighted is None:
         return None
-    return effects_table(weighted, "test_macro_f1")[["effect", "estimate"]]
+    wl_effects = effects_table(weightless, "test_macro_f1")
+    w_effects = effects_table(weighted, "test_macro_f1")
+    return wl_effects.merge(w_effects, on=["effect", "kind"], suffixes=("_wl", "_w"))
 
 
 def _valid_dataset_runs(full: pd.DataFrame, dataset: str) -> pd.DataFrame | None:
@@ -225,8 +234,14 @@ def _save_grouped_bars(
     title: str,
     ylabel: str,
     path: pathlib.Path,
+    *,
+    signed: bool = False,
 ) -> pathlib.Path:
-    """Save side-by-side weightless/weighted bars so the before/after gap is visible."""
+    """Save side-by-side weightless/weighted bars so the before/after gap is visible.
+
+    ``signed=True`` draws a zero baseline and auto-scales for values that cross
+    zero (factorial effects); otherwise the axis is pinned to the [0, 1] F1 range.
+    """
     path.parent.mkdir(parents=True, exist_ok=True)
     positions = range(len(labels))
     width = 0.4
@@ -235,7 +250,10 @@ def _save_grouped_bars(
     ax.bar([p + width / 2 for p in positions], weighted, width, label="weighted", color="#3274a1")
     ax.set_title(title)
     ax.set_ylabel(ylabel)
-    ax.set_ylim(0.0, 1.0)
+    if signed:
+        ax.axhline(0.0, color="#4c566a", linewidth=1.0)
+    else:
+        ax.set_ylim(0.0, 1.0)
     ax.set_xticks(list(positions))
     ax.set_xticklabels(labels, rotation=35, ha="right")
     ax.legend()
@@ -349,7 +367,7 @@ def _dataset_section(
         lines.append(_dataset_row(condition, indexed.loc[condition]))
     lines.append("")
     lines += _dataset_figure(f1_bar, "F1 by condition: weightless vs weighted")
-    lines += _dataset_figure(effect_bar, "main effects (weighted)")
+    lines += _dataset_figure(effect_bar, "main effects: weightless vs weighted")
     return lines
 
 
